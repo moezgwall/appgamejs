@@ -422,3 +422,37 @@ function randomRGB() {
 
   return `rgb(${r}, ${g}, ${b})`;
 }
+
+function bindMobileControls() {
+  const btnUp = document.getElementById("btn-up");
+  const btnDown = document.getElementById("btn-down");
+  const btnLeft = document.getElementById("btn-left");
+  const btnRight = document.getElementById("btn-right");
+  const btnBoost = document.getElementById("btn-boost");
+
+  function handlePress(key) {
+    keys[key] = true;
+  }
+
+  function handleRelease(key) {
+    keys[key] = false;
+  }
+
+  btnUp.addEventListener("touchstart", () => handlePress("z"));
+  btnUp.addEventListener("touchend", () => handleRelease("z"));
+
+  btnDown.addEventListener("touchstart", () => handlePress("s"));
+  btnDown.addEventListener("touchend", () => handleRelease("s"));
+
+  btnLeft.addEventListener("touchstart", () => handlePress("q"));
+  btnLeft.addEventListener("touchend", () => handleRelease("q"));
+
+  btnRight.addEventListener("touchstart", () => handlePress("d"));
+  btnRight.addEventListener("touchend", () => handleRelease("d"));
+
+  btnBoost.addEventListener("touchstart", () => {
+    pl.boostBoost();
+  });
+}
+
+bindMobileControls();
