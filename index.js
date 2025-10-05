@@ -132,19 +132,19 @@ class Player {
     const startY = this.ypos;
 
     if (keys["z"]) {
-      this.ypos -= this.vy * dt; // move up
+      this.ypos -= this.vy * dt;
     }
     if (keys["s"]) {
-      this.ypos += this.vy * dt; // move down
+      this.ypos += this.vy * dt;
     }
     if (this.checkCollForAllBalls(balls)) {
       this.ypos = startY;
     }
     if (keys["q"]) {
-      this.xpos -= this.vx * dt; // move left
+      this.xpos -= this.vx * dt;
     }
     if (keys["d"]) {
-      this.xpos += this.vx * dt; // move right
+      this.xpos += this.vx * dt;
     }
     if (this.checkCollForAllBalls(balls)) {
       this.xpos = startX;
@@ -249,21 +249,17 @@ class Ball {
 
   // check the collision between Ball and player
   isCircleToRect(player) {
-    const bX = this.posx;
-    const bY = this.posy;
     const radius = this.radius;
-
-    const recX = player.xpos;
-    const recY = player.ypos;
-    const recW = player.w;
-    const recH = player.h;
-
-    const xx = Math.max(recX, Math.min(bX, recX + recW));
-    const yy = Math.max(recY, Math.min(bY, recY + recH));
-
-    const dx = bX - xx;
-    const dy = bY - yy;
-
+    const xx = Math.max(
+      player.xpos,
+      Math.min(this.posx, player.xpos + player.w)
+    );
+    const yy = Math.max(
+      player.ypos,
+      Math.min(this.posy, player.ypos + player.h)
+    );
+    const dx = this.posx - xx;
+    const dy = this.posy - yy;
     return dx * dx + dy * dy < radius * radius;
   }
 
@@ -273,15 +269,13 @@ class Ball {
 
     const distance = Math.sqrt(dx * dx + dy * dy);
     if (distance > 0) {
-      const acceleration = 0.5; // small adjustment per frame
+      const acceleration = 0.5;
       const directionX = dx / distance;
       const directionY = dy / distance;
 
-      // Gradually adjust vx/vy toward player
       this.vx += directionX * acceleration;
       this.vy += directionY * acceleration;
 
-      // Optional: cap the velocity
       const maxSpeed = 100;
       const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
       if (speed > maxSpeed) {
@@ -366,7 +360,7 @@ function gameLoop() {
   ctx.fillRect(0, 0, width, height);
   if (isGameOver) {
     displayGameOver();
-    return; // stop the game loop
+    return;
   }
   render_BallNb.textContent = `Balls: ${balls.length}`;
   let currtime = performance.now();
@@ -402,12 +396,10 @@ function displayGameOver() {
   ctx.fillText("Press R to Restart", width / 2, height / 2 + 30);
 }
 function restartGame() {
-  // Reset state
   isGameOver = false;
-  balls.length = 0; // clear enemies
-  populate(pl); // repopulate with new enemies
+  balls.length = 0;
+  populate(pl);
 
-  // Reset player
   pl.canBoost = true;
   pl.isBoosting = false;
   pl.vx = pl.defaultVx;
@@ -417,7 +409,7 @@ function restartGame() {
   pl.hp = 100;
   hideBoostCooldown();
   lasttime = performance.now();
-  gameLoop(); // restart the loop
+  gameLoop();
 }
 
 populate(pl);
