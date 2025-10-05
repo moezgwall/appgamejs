@@ -3,12 +3,12 @@ const render_pos = document.getElementById("plpos");
 const render_HP = document.getElementById("plhp");
 const render_BallNb = document.getElementById("nbballs");
 const boostTimerDisplay = document.getElementById("boost-timer");
-
+const render_fbdmg = document.getElementById("FB-Dmg");
 const ctx = canvas.getContext("2d");
 
 const width = 1000;
 const height = 1000;
-const MAX_BALLS = 50;
+const MAX_BALLS = 10;
 const keys = {};
 
 let isGameOver = false;
@@ -54,20 +54,25 @@ class Player {
     this.hp = 100;
     this.w = 25;
     this.h = 25;
-    this.lastTimeHit = 0;
-    this.canBoost = true;
-    this.isBoosting = false;
-    this.boostDuration = 10 * 1000;
-    this.boostCooldown = 60 * 1000;
-    this.lastBoostTime = 0;
-    this.StartVX = vx;
-    this.StartVY = vy;
+    this.lastTimeHit = 0; // flag to prevent hitting multiple time per frame
+    this.canBoost = true; // ability to boost if not used
+    this.isBoosting = false; // FLAG if he is boosting now or not
+    this.boostDuration = 10 * 1000; // duration of the boost (10sec)
+    this.boostCooldown = 60 * 1000; // time needed to boost again (60sec)
+    this.lastBoostTime = 0; // flag to keep on track on last time boosted
+    this.StartVX = vx; // save initial vx to restore after boost ends
+    this.StartVY = vy; // ............ vy ...........................
+    this.criticDmg = 0; // initial value of crictic dmg (availaible on boost only)
+    this.shield = 0; // initial value of shield (adds to hp value on boost only)
   }
   boostBoost() {
     const now = performance.now();
     if (this.canBoost) {
-      this.vx = this.StartVX * 3;
-      this.vy = this.StartVY * 3;
+      this.vx *= 3;
+      this.vy *= 3;
+      this.criticDmg = 2;
+      this.shield = 100;
+      this.hp += this.shield;
       this.isBoosting = true;
       this.canBoost = false;
       this.lastBoostTime = now;
@@ -75,6 +80,9 @@ class Player {
       setTimeout(() => {
         this.vx = this.StartVX;
         this.vy = this.StartVY;
+        this.criticDmg = 0;
+        this.shield = 0;
+        this.hp -= this.shield;
         this.isBoosting = false;
       }, this.boostDuration);
       // allow boost again after 60sec
@@ -95,6 +103,7 @@ class Player {
   getHP() {
     return this.hp;
   }
+  // preventing dealing dmg to player per frame ()
   isInvincible() {
     return performance.now() - this.lastTimeHit < 500; // compare on ms scale
   }
@@ -102,7 +111,7 @@ class Player {
     ctx.fillStyle = this.color;
     ctx.fillRect(this.xpos, this.ypos, this.w, this.h);
   }
-
+  // helper function (1)
   isCollidingWithBalls(ball) {
     const circleX = ball.posx;
     const circleY = ball.posy;
@@ -116,7 +125,8 @@ class Player {
 
     return dx * dx + dy * dy < radius * radius;
   }
-
+  // use of (1) to check for all balls stored in the vector(balls)
+  // return 1 on collide
   checkCollForAllBalls(balls) {
     for (const ball in balls) {
       if (this.isCollidingWithBalls(ball)) {
@@ -126,7 +136,8 @@ class Player {
 
     return false;
   }
-
+  // update the player postion( via keys)
+  // keep on checking  if he collide while moving
   updatePlayer(dt, balls) {
     const startX = this.xpos;
     const startY = this.ypos;
@@ -176,16 +187,35 @@ class Ball {
     this.vy = vy;
     this.color = color;
     this.radius = radius;
-    this.dmg = 5.0;
+    this.dmg = 2.5;
+    this.hp = 4;
+    this.isAlive = true;
   }
+  // ability to take dmg from player via fireball
+  // if the player is on boost mode the dmg increase by critic dmg
+  // decide the final dmg taken by the Ball
+  // update the state of the ball to decied is it stays on frame
+  // or being removed , splice from array of Balls
+  takeDmg(player, amount) {
+    const finalDMG = player.isBoosting ? amount * player.criticDmg : amount;
 
+    this.hp -= finalDMG;
+    if (this.hp <= 0) {
+      this.hp = 0;
+      this.isAlive = false;
+      return true; // DEAD
+    }
+
+    return false; // alive
+  }
+  // draw the ball
   drawBall() {
     ctx.beginPath();
     ctx.fillStyle = this.color;
     ctx.arc(this.posx, this.posy, this.radius, 0, 2 * Math.PI);
     ctx.fill();
   }
-
+  // update the ball : movement on the canvas (factor : dt)
   updateBall(dt) {
     if (this.posx + this.radius >= width) {
       this.vx = -this.vx;
@@ -205,7 +235,9 @@ class Ball {
     this.posx += this.vx * dt;
     this.posy += this.vy * dt;
   }
-
+  // check the collosion between the ball and the player
+  // if collide the dmg is done and supposed to bounce back via
+  // swaping velocity
   isCollided(player) {
     for (const entity of balls) {
       if (this !== entity) {
@@ -262,7 +294,7 @@ class Ball {
     const dy = this.posy - yy;
     return dx * dx + dy * dy < radius * radius;
   }
-
+  // chasing the player on the canvas
   chasePlayer(player) {
     const dx = player.xpos + player.w / 2 - this.posx;
     const dy = player.ypos + player.h / 2 - this.posy;
@@ -288,10 +320,64 @@ class Ball {
 
 // FireBall class
 class FireBall extends Ball {
-  constructor(posx, posy, vx, vy, color, radius) {
+  constructor(posx, posy, vx, vy, color, radius, targetX, targetY) {
     super(posx, posy, vx, vy, color, radius);
     this.DMG = 2.0;
-    this.Destroyed = false;
+    this.Destroyed = false; // Flag : decide if we remove it or keep it
+    this.speed = 200; // the speed of the fire ball
+
+    // the direction toward the target via a velocity x,y
+    const dx = targetX - this.posx;
+    const dy = targetY - this.posy;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    this.vx = (dx / distance) * this.speed;
+    this.vy = (dy / distance) * this.speed;
+  }
+  // another naive try : for calculating the total dmg done
+  // checking the state of player if boosting now or no
+  TotalDMG(player) {
+    if (player.isBoosting) {
+      const total = this.DMG * player.criticDmg;
+      return total;
+    }
+
+    return this.DMG;
+  }
+
+  update(dt) {
+    this.posx += this.vx * dt;
+    this.posy += this.vy * dt;
+
+    // Destroy it , if it collide with map borders (canvas w,h)
+    if (
+      this.posx < 0 ||
+      this.posx > width ||
+      this.posy < 0 ||
+      this.posy > height
+    ) {
+      this.destroyed = true;
+    }
+  }
+  // drawing the fireball
+  draw() {
+    ctx.beginPath();
+    ctx.fillStyle = this.color;
+    ctx.arc(this.posx, this.posy, this.radius, 0, 2 * Math.PI);
+    ctx.fill();
+  }
+  // bullet (fireball) with the ball considerd as enemy
+  // if collide : the Ball takes dmg , based on the player state : boosting or no
+  checkCollisionWithBall(ball) {
+    const dx = this.posx - ball.posx;
+    const dy = this.posy - ball.posy;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist < this.radius + ball.radius) {
+      const destroyed = ball.takeDmg(pl, this.DMG);
+      this.destroyed = true;
+      return destroyed;
+    }
+    return false;
   }
 
   // The idea is to check the flag:"Destroyed" to draw the fireball
@@ -306,21 +392,30 @@ class FireBall extends Ball {
       }
     }
   }
-
-  // the idea is to launch the fireball from the center of the rect (player)
-  launchFireBall(targetX, targetY) {
-    const dx = targetX - (Player.xpos + 37.5); // from center of player
-    const dy = targetY - (Player.ypos + 37.5);
-    const angle = Math.atan2(dy, dx);
-    const velocityX = Math.sin(angle) * this.vx;
-    const velocityY = Math.sin(angle) * this.vy;
-
-    this.xpos = dx;
-    this.ypos = dy;
-    this.vx = velocityX;
-    this.vy = velocityY;
-  }
 }
+
+const fireballs = [];
+
+canvas.addEventListener("click", (e) => {
+  if (isGameOver) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const targetX = e.clientX - rect.left;
+  const targetY = e.clientY - rect.top;
+
+  const fireball = new FireBall(
+    pl.xpos + pl.w / 2,
+    pl.ypos + pl.h / 2,
+    0,
+    0,
+    "rgb(255, 68, 0)",
+    3,
+    targetX,
+    targetY
+  );
+
+  fireballs.push(fireball);
+});
 
 function random(min, max) {
   return Math.random() * (max - min) + min;
@@ -358,14 +453,18 @@ let lasttime = performance.now();
 function gameLoop() {
   ctx.fillStyle = "rgb(0 0 0 / 25%)";
   ctx.fillRect(0, 0, width, height);
+
   if (isGameOver) {
     displayGameOver();
     return;
   }
+
   render_BallNb.textContent = `Balls: ${balls.length}`;
+
   let currtime = performance.now();
   const dt = (currtime - lasttime) / 1000;
   lasttime = currtime;
+
   pl.updatePlayer(dt, balls);
 
   for (const ball of balls) {
@@ -374,14 +473,40 @@ function gameLoop() {
     ball.isCollided(pl);
   }
 
+  // Update Fireballs
+  for (const fireball of fireballs) {
+    fireball.update(dt);
+    // remove enemy balls if their hp = 0
+    for (let i = balls.length - 1; i >= 0; i--) {
+      if (fireball.checkCollisionWithBall(balls[i])) {
+        if (balls[i].hp <= 0) {
+          balls.splice(i, 1);
+        }
+      }
+    }
+  }
+
+  // Clean up destroyed fireballs
+  for (let i = fireballs.length - 1; i >= 0; i--) {
+    if (fireballs[i].destroyed) {
+      fireballs.splice(i, 1);
+    }
+  }
+
   pl.drawPlayer();
   for (const ball of balls) {
     ball.drawBall();
+  }
+
+  // draw the all the fireballs
+  for (const fireball of fireballs) {
+    fireball.draw();
   }
   if (!pl.canBoost) {
     const remaining = Math.ceil(pl.leftBoostCooldown() / 1000);
     boostTimerDisplay.textContent = `Boost Cooldown: ${remaining}s`;
   }
+
   requestAnimationFrame(gameLoop);
 }
 function displayGameOver() {
@@ -395,15 +520,15 @@ function displayGameOver() {
   ctx.font = "24px sans-serif";
   ctx.fillText("Press R to Restart", width / 2, height / 2 + 30);
 }
+// restart the game to init state
 function restartGame() {
   isGameOver = false;
   balls.length = 0;
   populate(pl);
-
   pl.canBoost = true;
   pl.isBoosting = false;
-  pl.vx = pl.defaultVx;
-  pl.vy = pl.defaultVy;
+  pl.vx = pl.StartVX;
+  pl.vy = pl.StartVY;
   pl.xpos = width / 2;
   pl.ypos = height / 2;
   pl.hp = 100;
