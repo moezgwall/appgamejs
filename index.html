@@ -115,6 +115,22 @@
         cursor: pointer;
         touch-action: none;
       }
+      #fire-area {
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: 50%;
+        height: 100%;
+        z-index: 100;
+        background: transparent;
+        pointer-events: none; /* Prevent blocking mouse */
+      }
+      @media (pointer: coarse) {
+        #fire-area {
+          pointer-events: auto; /* Enable on touch devices */
+        }
+      }
+
       @media (min-width: 768px) {
         #mobile-controls {
           display: none;
@@ -135,6 +151,7 @@
         <label id="plhp">HP: 100</label>
         <label id="FB-Dmg">DMG: 2.0</label>
         <label id="nbballs">Balls: 0</label>
+        <label id="BOSS-HP"></label>
       </div>
 
       <canvas id="myCanvas" width="1000" height="1000"></canvas>
@@ -153,6 +170,7 @@
         </div>
       </div>
     </div>
+    <div id="fire-area"></div>
 
     <script src="index.js"></script>
   </body>

@@ -4,11 +4,12 @@ const render_HP = document.getElementById("plhp");
 const render_BallNb = document.getElementById("nbballs");
 const boostTimerDisplay = document.getElementById("boost-timer");
 const render_fbdmg = document.getElementById("FB-Dmg");
+const render_BossHP = document.getElementById("BOSS-HP");
 const ctx = canvas.getContext("2d");
 
 const width = 1000;
 const height = 1000;
-const MAX_BALLS = 10;
+const MAX_BALLS = 30;
 const keys = {};
 
 let isGameOver = false;
@@ -16,33 +17,52 @@ let isGameOver = false;
 balls = [];
 
 window.addEventListener("keydown", (e) => {
-  keys[e.key] = true;
-});
-
-window.addEventListener("keydown", (e) => {
-  keys[e.key] = true;
+  keys[e.key.toLowerCase()] = true;
   if (e.key === " " && !e.repeat) {
     pl.boostBoost();
   }
-});
-
-window.addEventListener("keyup", (e) => {
-  keys[e.key] = false;
-});
-
-window.addEventListener("keydown", (e) => {
   if (e.key.toLowerCase() === "r" && isGameOver) {
     restartGame();
   }
+});
+window.addEventListener("keyup", (e) => {
+  keys[e.key.toLowerCase()] = false;
+});
+
+const fireArea = document.getElementById("fire-area");
+
+fireArea.addEventListener("touchstart", (e) => {
+  if (isGameOver) return;
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  const targetX = touch.clientX - rect.left;
+  const targetY = touch.clientY - rect.top;
+
+  const fireball = new FireBall(
+    pl.xpos + pl.w / 2,
+    pl.ypos + pl.h / 2,
+    0,
+    0,
+    "rgb(255, 68, 0)",
+    3,
+    targetX,
+    targetY
+  );
+  fireballs.push(fireball);
 });
 
 function showBoostCooldown() {
   boostTimerDisplay.style.display = "block";
 }
-
 function hideBoostCooldown() {
   boostTimerDisplay.style.display = "none";
 }
+
+const bossFireballImg = new Image();
+bossFireballImg.src = "./assets/throw.png";
+bossFireballImg.onload = () => {
+  console.log("Boss fireball image loaded");
+};
 
 class Player {
   constructor(xpos, ypos, vx, vy, color) {
@@ -64,6 +84,8 @@ class Player {
     this.StartVY = vy; // ............ vy ...........................
     this.criticDmg = 0; // initial value of crictic dmg (availaible on boost only)
     this.shield = 0; // initial value of shield (adds to hp value on boost only)
+    this.BoostInfo = render_fbdmg;
+    this.BoostInfoHp = render_HP;
   }
   boostBoost() {
     const now = performance.now();
@@ -76,14 +98,19 @@ class Player {
       this.isBoosting = true;
       this.canBoost = false;
       this.lastBoostTime = now;
+      this.BoostInfo.textContent = `DMG:${this.criticDmg * 2}`;
+      this.BoostInfoHp.textContent = `HP:${this.hp}`;
       // rest the normal speed after boost
       setTimeout(() => {
         this.vx = this.StartVX;
         this.vy = this.StartVY;
         this.criticDmg = 0;
-        this.shield = 0;
         this.hp -= this.shield;
+        this.shield = 0;
+
         this.isBoosting = false;
+        this.BoostInfo.textContent = `DMG:${2}`;
+        this.BoostInfoHp.textContent = `HP:${this.hp}`;
       }, this.boostDuration);
       // allow boost again after 60sec
       setTimeout(() => {
@@ -107,11 +134,12 @@ class Player {
   isInvincible() {
     return performance.now() - this.lastTimeHit < 500; // compare on ms scale
   }
+  // drawing the player
   drawPlayer() {
     ctx.fillStyle = this.color;
     ctx.fillRect(this.xpos, this.ypos, this.w, this.h);
   }
-  // helper function (1)
+  // helper function (1) collision between circle and ball
   isCollidingWithBalls(ball) {
     const circleX = ball.posx;
     const circleY = ball.posy;
@@ -190,6 +218,8 @@ class Ball {
     this.dmg = 2.5;
     this.hp = 4;
     this.isAlive = true;
+    this.boosHP = render_BossHP;
+    this.isBoss = false;
   }
   // ability to take dmg from player via fireball
   // if the player is on boost mode the dmg increase by critic dmg
@@ -208,6 +238,23 @@ class Ball {
 
     return false; // alive
   }
+  // for the bossonly
+  drawBossBall(img, x, y) {
+    const size = this.radius * 2;
+    ctx.drawImage(img, x, y, size, size);
+  }
+  shootAtPlayer(player) {
+    if (!this.isBoss) return;
+
+    const fireball = new BossFireBall(
+      this.posx,
+      this.posy,
+      player.xpos + player.w / 2,
+      player.ypos + player.h / 2
+    );
+    bossFireballs.push(fireball);
+  }
+
   // draw the ball
   drawBall() {
     ctx.beginPath();
@@ -264,13 +311,13 @@ class Ball {
         if (!player.isInvincible()) {
           player.hp -= this.dmg;
           player.hp = Math.max(0, player.hp);
+          player.BoostInfoHp.textContent = `HP:${player.hp}`;
           player.lastTimeHit = now;
 
           if (player.hp === 0) {
             isGameOver = true;
           }
 
-          render_HP.textContent = `Player-HP: ${player.hp}`;
           // it should bounce back from the player
           this.vx = -this.vx;
           this.vy = -this.vy;
@@ -394,7 +441,53 @@ class FireBall extends Ball {
   }
 }
 
+class BossFireBall extends FireBall {
+  constructor(posx, posy, targetX, targetY) {
+    super(posx, posy, 0, 0, "rgb(255,0,0)", 5, targetX, targetY);
+    this.dmg = 6.5;
+    this.speed = 150;
+    this.vx =
+      ((targetX - posx) / Math.hypot(targetX - posx, targetY - posy)) *
+      this.speed;
+    this.vy =
+      ((targetY - posy) / Math.hypot(targetX - posx, targetY - posy)) *
+      this.speed;
+  }
+  draw() {
+    const size = this.radius * 2;
+    ctx.drawImage(
+      bossFireballImg,
+      this.posx - this.radius,
+      this.posy - this.radius,
+      size,
+      size
+    );
+  }
+  checkCollisionWithPlayer(player) {
+    const dx = this.posx - (player.xpos + player.w / 2);
+    const dy = this.posy - (player.ypos + player.h / 2);
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist < this.radius + Math.min(player.w, player.h) / 2) {
+      if (!player.isInvincible()) {
+        player.hp -= this.DMG;
+        player.hp = Math.max(0, player.hp);
+        player.BoostInfoHp.textContent = `HP:${player.hp}`;
+        player.lastTimeHit = performance.now();
+
+        if (player.hp === 0) {
+          isGameOver = true;
+        }
+      }
+      return true;
+    }
+
+    return false;
+  }
+}
+
 const fireballs = [];
+const bossFireballs = [];
 
 canvas.addEventListener("click", (e) => {
   if (isGameOver) return;
@@ -447,12 +540,20 @@ function populate(player) {
     balls.push(ball);
   }
 }
-
+const bossImg = new Image();
+bossImg.src = "./assets/taxi.png";
+bossImg.onload = () => {
+  console.log("Player image ready!");
+};
 const pl = new Player(width / 2, height / 2, 60, 60, "rgb(255,255,255)");
 let lasttime = performance.now();
+
 function gameLoop() {
   ctx.fillStyle = "rgb(0 0 0 / 25%)";
   ctx.fillRect(0, 0, width, height);
+
+  let lastBossFire = 0;
+  const bossFireRate = 7000; // every 2 seconds
 
   if (isGameOver) {
     displayGameOver();
@@ -495,7 +596,49 @@ function gameLoop() {
 
   pl.drawPlayer();
   for (const ball of balls) {
-    ball.drawBall();
+    if (ball.isBoss) {
+      ball.drawBossBall(
+        bossImg,
+        ball.posx - ball.radius,
+        ball.posy - ball.radius
+      );
+      ball.boosHP.textContent = `TAXI:${ball.hp}`;
+    } else {
+      ball.drawBall();
+    }
+  }
+  if (balls.length === 1 && !balls[0].isBoss) {
+    beBoss();
+  }
+  const now = performance.now();
+  const boss = balls.find((b) => b.isBoss);
+  if (boss && now - lastBossFire > bossFireRate) {
+    boss.shootAtPlayer(pl);
+    lastBossFire = now;
+  }
+  for (let i = bossFireballs.length - 1; i >= 0; i--) {
+    const fireball = bossFireballs[i];
+    fireball.update(dt);
+
+    // Check collision with player
+    if (fireball.checkCollisionWithPlayer(pl)) {
+      bossFireballs.splice(i, 1);
+    }
+
+    // Remove offscreen fireballs
+    else if (
+      fireball.posx < 0 ||
+      fireball.posx > width ||
+      fireball.posy < 0 ||
+      fireball.posy > height
+    ) {
+      bossFireballs.splice(i, 1);
+    }
+  }
+
+  // Draw boss fireballs
+  for (const fireball of bossFireballs) {
+    fireball.draw();
   }
 
   // draw the all the fireballs
@@ -509,6 +652,17 @@ function gameLoop() {
 
   requestAnimationFrame(gameLoop);
 }
+
+function beBoss() {
+  if (balls.length === 1) {
+    balls[0] = new Ball(width / 3, height / 3, 15, 15, "", 45);
+    balls[0].hp = 100;
+    balls[0].dmg = 22;
+    balls[0].radius = 45;
+    balls[0].isBoss = true;
+  }
+}
+
 function displayGameOver() {
   ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
   ctx.fillRect(0, 0, width, height);
@@ -516,7 +670,7 @@ function displayGameOver() {
   ctx.fillStyle = "white";
   ctx.font = "48px sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("Game Over - Your Mom", width / 2, height / 2 - 20);
+  ctx.fillText("Game Over- By moezgWall", width / 2, height / 2 - 20);
   ctx.font = "24px sans-serif";
   ctx.fillText("Press R to Restart", width / 2, height / 2 + 30);
 }
