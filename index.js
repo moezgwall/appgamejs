@@ -32,6 +32,8 @@ window.addEventListener("keyup", (e) => {
 const fireArea = document.getElementById("fire-area");
 
 fireArea.addEventListener("touchstart", (e) => {
+  e.stopPropagation(); // Prevents event conflict with movement buttons
+
   if (isGameOver) return;
   const touch = e.touches[0];
   const rect = canvas.getBoundingClientRect();
@@ -717,19 +719,42 @@ function bindMobileControls() {
     keys[key] = false;
   }
 
-  btnUp.addEventListener("touchstart", () => handlePress("z"));
-  btnUp.addEventListener("touchend", () => handleRelease("z"));
+  btnUp.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    handlePress("z");
+  });
+  btnUp.addEventListener("touchend", (e) => {
+    e.preventDefault();
+    handleRelease("z");
+  });
+  btnDown.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    handlePress("s");
+  });
+  btnDown.addEventListener("touchend", (e) => {
+    e.preventDefault();
+    handleRelease("s");
+  });
+  btnLeft.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    handlePress("q");
+  });
+  btnLeft.addEventListener("touchend", (e) => {
+    e.preventDefault();
+    handleRelease("q");
+  });
 
-  btnDown.addEventListener("touchstart", () => handlePress("s"));
-  btnDown.addEventListener("touchend", () => handleRelease("s"));
+  btnRight.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    handlePress("d");
+  });
+  btnRight.addEventListener("touchend", (e) => {
+    e.preventDefault();
+    handleRelease("d");
+  });
 
-  btnLeft.addEventListener("touchstart", () => handlePress("q"));
-  btnLeft.addEventListener("touchend", () => handleRelease("q"));
-
-  btnRight.addEventListener("touchstart", () => handlePress("d"));
-  btnRight.addEventListener("touchend", () => handleRelease("d"));
-
-  btnBoost.addEventListener("touchstart", () => {
+  btnBoost.addEventListener("touchstart", (e) => {
+    e.preventDefault();
     pl.boostBoost();
   });
 }
