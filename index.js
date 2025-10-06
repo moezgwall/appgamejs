@@ -9,7 +9,7 @@ const ctx = canvas.getContext("2d");
 
 const width = 1000;
 const height = 1000;
-const MAX_BALLS = 30;
+const MAX_BALLS = 4;
 const keys = {};
 
 let isGameOver = false;
