@@ -6,7 +6,7 @@ Game-version : 0.0.1v
 
 Language : Javascript
 
-Author : moezchroufa
+Author : gWall
 
 
 
