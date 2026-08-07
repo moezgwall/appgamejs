@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>GAMEJS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+        background: #000;
+        font-family: "Courier New", monospace;
+        overflow: hidden;
+        color: #cbd3cb;
+      }
+
+      #matrix-bg {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: -1;
+        width: 100%;
+        height: 100%;
+        background: black;
+      }
+
+      #game-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        padding-top: 20px;
+        margin-left: 0;
+        width: 100%;
+      }
+
+      #labels {
+        margin-bottom: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        font-size: 20px;
+        background-color: rgba(0, 0, 0, 0.5);
+        padding: 10px 20px;
+        border: 1px solid #ccd6cc;
+        border-radius: 5px;
+        color: #cbdacb;
+        max-width: 90vw;
+      }
+
+      canvas#myCanvas {
+        width: 90vw;
+        height: 90vw;
+        max-width: 1000px;
+        max-height: 1000px;
+        border: 2px solid #a7b6a7;
+        background-color: rgba(0, 0, 0, 0.7);
+        display: block;
+      }
+
+      #boost-timer {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        color: #dfe9df;
+        font-size: 20px;
+        font-family: monospace;
+        display: none;
+        padding: 6px 12px;
+        background-color: rgba(0, 0, 0, 0.75);
+        border: 1px solid #747c74;
+        border-radius: 4px;
+        z-index: 10;
+      }
+
+      #quoteBox {
+        position: absolute;
+        top: 80px;
+        left: 20px;
+        max-width: 250px;
+        width: 70vw;
+      }
+      #mobile-controls {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        user-select: none;
+      }
+
+      .control-row {
+        display: flex;
+        justify-content: center;
+        margin: 5px;
+      }
+
+      .ctrl-btn {
+        background-color: rgba(255, 255, 255, 0.8);
+        border: 2px solid #000;
+        border-radius: 10px;
+        font-size: 24px;
+        padding: 10px 20px;
+        margin: 5px;
+        cursor: pointer;
+        touch-action: none;
+      }
+      #fire-area {
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: 50%;
+        height: 80%; /* not full height */
+        z-index: 5; /* lower than mobile buttons */
+        background: transparent;
+        pointer-events: none;
+      }
+      @media (pointer: coarse) {
+        #fire-area {
+          pointer-events: auto;
+        }
+      }
+
+      #mobile-controls {
+        z-index: 20;
+      }
+      @media (min-width: 768px) {
+        #mobile-controls {
+          display: none;
+        }
+      }
+      #fire-area,
+      .mobile-button {
+        touch-action: none;
+      }
+    </style>
+  </head>
+
+  <body>
+    <canvas id="matrix-bg"></canvas>
+
+    <div id="boost-timer"></div>
+    <div id="quoteBox"></div>
+
+    <div id="game-container">
+      <div id="labels">
+        <label id="plpos">Position: (0,0)</label>
+        <label id="plhp">HP: 100</label>
+        <label id="FB-Dmg">DMG: 2.0</label>
+        <label id="nbballs">Balls: 0</label>
+        <label id="BOSS-HP"></label>
+      </div>
+
+      <canvas id="myCanvas" width="1000" height="1000"></canvas>
+
+      <div id="mobile-controls">
+        <div class="control-row">
+          <button class="ctrl-btn" id="btn-up">▲</button>
+        </div>
+        <div class="control-row">
+          <button class="ctrl-btn" id="btn-left">◀</button>
+          <button class="ctrl-btn" id="btn-down">▼</button>
+          <button class="ctrl-btn" id="btn-right">▶</button>
+        </div>
+        <div class="control-row">
+          <button class="ctrl-btn" id="btn-boost">BOOST</button>
+        </div>
+      </div>
+    </div>
+    <div id="fire-area"></div>
+
+    <script src="index.js"></script>
+  </body>
+</html>
