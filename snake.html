@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>leGame"snake"</title>
+<style>
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: #68696b;
+    color: #e2e8f0;
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+  canvas {
+    background: #f4f4f5;
+    border: 2px solid #141414;
+  }
+  #score { font-size: 3rem; }
+  #message { font-size: 1.5rem; color: #b1fd00; min-height: 1.2em; }
+</style>
+</head>
+<body>
+ 
+<div id="lescore">Score: 0</div>
+<canvas id="APP" width="800" height="600"></canvas>
+<div id="lemsg">Use arrow keys to move. Press Space to restart after Game Over.</div>
+
+<script>
+
+'use strict'
+
+const canvas = document.getElementById("APP");
+const ctx = canvas.getContext("2d");
+const gscore = document.getElementById("lescore");
+const msg = document.getElementById("lemsg");
+
+/* GL Game Settings */
+const cv_width = canvas.width;
+const cv_height = canvas.height;
+const CELL = 20;
+const COLS = cv_width / CELL;
+const ROWS = cv_height / CELL;
+/* GL VARIABLES */
+let snake;
+let dir; // direction
+let ndir; // expected direct at j+1 
+let food;
+let score;
+let isGameOver;
+
+/* RENDER GAME */
+
+function draw() {
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(0, 0, cv_width, cv_height);
+
+    ctx.fillStyle = '#fac811';
+    ctx.fillRect(food.x * CELL, food.y * CELL, CELL - 1, CELL - 1);
+
+    snake.forEach((seg, i) => {
+        ctx.fillStyle = i === 0 ? '#38bdf8' : '#0ea5e9';
+        ctx.fillRect(seg.x * CELL, seg.y * CELL, CELL - 1, CELL - 1);
+    });
+
+}
+
+function updateScore() {
+    gscore.textContent = `Score:${score}`;
+}
+
+function restart() {
+    snake = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }];
+    dir = { x: 1, y: 0 };
+    ndir = { x: 1, y: 0 };
+    score = 0;
+    isGameOver = false;
+    updateScore();
+    setFood();
+    msg.textContent = "Start";
+}
+
+function setFood() {
+    let pos;
+    do {
+        pos = {
+            x: Math.floor(Math.random() * COLS),
+            y: Math.floor(Math.random() * ROWS),
+        };
+    } while (snake.some(seg => seg.x === pos.x && seg.y === pos.y));
+    food = pos;
+
+}
+
+function gameover() {
+    isGameOver = true;
+    msg.textContent = `WOOPS! you suck with ${score} points. Press Space to retry`;
+}
+
+/* get inputs from the keyboard */
+window.addEventListener('keydown', (e) => {
+    switch (e.key) {
+        case 'ArrowUp':
+            if (dir.y === 0) ndir = { x: 0, y: -1 };
+            break;
+        case 'ArrowDown':
+            if (dir.y === 0) ndir = { x: 0, y: 1 };
+            break;
+        case 'ArrowLeft':
+            if (dir.x === 0) ndir = { x: -1, y: 0 };
+            break;
+        case 'ArrowRight':
+            if (dir.x === 0) ndir = { x: 1, y: 0 };
+            break;
+        case ' ':
+            if (isGameOver) restart();
+            break;
+    }
+
+});
+
+function start() {
+    if (isGameOver) return;
+    dir = ndir;
+    const snakeHead = {
+        x: snake[0].x + dir.x,
+        y: snake[0].y + dir.y
+    };
+    // hit the wall 
+    if (snakeHead.x < 0 || snakeHead.x >= COLS || snakeHead.y < 0 || snakeHead.y >= ROWS) {
+        return gameover();
+    }
+    if (snake.some((seg) => seg.x === snakeHead.x && seg.y === snakeHead.y)) {
+        return gameover();
+    }
+    snake.unshift(snakeHead)
+    if (snakeHead.x === food.x && snakeHead.y === food.y) {
+        score++;
+        updateScore();
+        setFood();
+    } else {
+        snake.pop();
+    }
+
+    draw();
+
+}
+
+restart();
+let TIMER;
+TIMER = setInterval(start, 200);
+
+
+
+</script>
+</body>
