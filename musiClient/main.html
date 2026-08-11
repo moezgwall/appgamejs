@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>musiLiar</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #1a1a1a;
+    color: #eee;
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 40px 16px;
+  }
+  .player {
+    width: 100%;
+    max-width: 360px;
+  }
+  .meta {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  #trackTitle {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 0 0 4px;
+  }
+  #trackArtist {
+    font-size: 13px;
+    color: #999;
+    margin: 0;
+  }
+  .controls {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .controls button {
+    background: #333;
+    border: none;
+    color: #eee;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  #playBtn {
+    width: 52px;
+    height: 52px;
+    background: #3197db;
+    color: #111;
+  }
+  .time-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 4px;
+  }
+  #seekTrack {
+    height: 4px;
+    background: #333;
+    border-radius: 2px;
+    position: relative;
+    margin-bottom: 20px;
+  }
+  #seekFill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 0%;
+    background: #3197db;
+    border-radius: 2px;
+  }
+  #seekHandle {
+    position: absolute;
+    top: 50%;
+    left: 0%;
+    width: 10px;
+    height: 10px;
+    background: #3197db;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .volume-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .volume-row input {
+    flex: 1;
+  }
+  .playlist {
+    border-top: 1px solid #333;
+    padding-top: 8px;
+  }
+  .track-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 4px;
+    border-bottom: 1px solid #2a2a2a;
+    cursor: pointer;
+  }
+  .track-row:hover {
+    background: #222;
+  }
+  .track-row.active .name {
+    color: #3197db;
+  }
+  .track-index {
+    font-size: 12px;
+    color: #999;
+    width: 16px;
+  }
+  .track-info { flex: 1; }
+  .track-info .name {
+    margin: 0;
+    font-size: 14px;
+  }
+  .track-info .sub {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: #999;
+  }
+  #ring, #disc, #tonearm {
+    display: none;
+  }
+</style>
+</head>
+<body>
+<div class="player">
+ 
+  <div class="meta">
+    <p id="trackTitle">UNKNOW</p>
+    <p id="trackArtist">UNKNOW</p>
+  </div>
+ 
+  <div class="controls">
+    <button id="prevBtn"><</button>
+    <button id="playBtn"><span id="playIcon">▶</span></button>
+    <button id="nextBtn"> > </button>
+  </div>
+ 
+  <div class="time-row">
+    <span id="curTime">0:00</span>
+    <span id="durTime">0:00</span>
+  </div>
+ 
+  <div id="seekTrack">
+    <div id="seekFill"></div>
+    <div id="seekHandle"></div>
+  </div>
+ 
+  <div class="volume-row">
+    <span>Volume</span>
+    <input type="range" id="volume" min="0" max="1" step="0.01" value="0.85">
+  </div>
+ 
+  <div class="playlist" id="playlistEl"></div>
+ 
+
+ 
+</div>
+ 
+<audio id="audio"></audio>
+ 
+<script src="player.js"></script>
+</body>
+</html>
