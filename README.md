@@ -1,13 +1,8 @@
-Project name : BallGAame  
-
-Type : 2D/game
-
-Game-version : 0.0.1v    
-
-Language : Javascript
-
-Author : gWall
-
+# Games 
+- firball
+- snake
+# Other
+- offline music player (still not working yet)
 
 
 
