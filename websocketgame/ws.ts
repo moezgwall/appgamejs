@@ -37,11 +37,11 @@ wss.on('connection',(ws:WebSocket)=>{
      ws.send(JSON.stringify({type:"init",id:playerId}));   
      // track the updates of all the players
       toAll();
-        ws.on('message', (data:pEvent)=>{
+        ws.on('message', (data:string)=>{
             // the loop should continue even if there
             // is some sort of any error 
             try{
-                const message : MoveMessage = JSON.parse(data.toString()) ;
+                const message  = JSON.parse(data.toString()) as pEvent ;
                 if (message.type === 'move'){
                     if (players[playerId]){
                         players[playerId].x += message.x;
@@ -49,6 +49,9 @@ wss.on('connection',(ws:WebSocket)=>{
                         // update those values to all clients (other players)
                         toAll();
                     }
+                }
+                if (message.type === 'chat'){
+                    console.log(`${playerId} : ${message.msg}`);
                 }
             
             }catch(err){
